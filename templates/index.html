@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-size: cover; /* Make sure the background covers the whole page */
+            background-position: center;
+            transition: background-image 0.3s ease; /* Smooth transition for background image */
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: rgba(255, 255, 255, 0.6); /* White background with 60% opacity */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        #review {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+            background-color: #e7f3fe;
+            border: 1px solid #b8e3f8;
+            color: #31708f;
+        }
+        #voice-btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #008CBA;
+            color: white;
+            font-size: 16px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #voice-btn:hover {
+            background-color: #007bb5;
+        }
+    </style>
+</head>
+<body id="body-background">
+    <div class="container">
+        <h1>Sentiment Analysis</h1>
+        <textarea id="review" placeholder="Enter your text here..."></textarea>
+        <button onclick="analyzeSentiment()">Analyze</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function analyzeSentiment() {
+            var review = $('#review').val();
+            $.ajax({
+                url: '/predict',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ review: review }),
+                success: function(response) {
+                    $('#result').text('Sentiment: ' + response.sentiment);
+                    changeBackgroundImage(response.sentiment);
+                },
+                error: function(error) {
+                    $('#result').text('Error: ' + error.responseJSON.error);
+                }
+            });
+        }
+
+        // Function to change the background image of the entire page based on sentiment
+        function changeBackgroundImage(sentiment) {
+            var body = $('#body-background');
+            var imagePath = '';
+
+            if (sentiment === 'Positive') {
+                imagePath = '/static/positive.jpg';  // Path to positive sentiment background image
+            } else if (sentiment === 'Negative') {
+                imagePath = '/static/negative.jpg';  // Path to negative sentiment background image
+            } else if (sentiment === 'Neutral') {
+                imagePath = '/static/neutral.jpg';  // Path to neutral sentiment background image
+            }
+
+            body.css('background-image', 'url(' + imagePath + ')');  // Set the background image for the whole body
+        }
+
+        // Voice input handling using Web Speech API
+        function startVoiceRecognition() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert('Your browser does not support speech recognition. Please try Chrome.');
+                return;
+            }
+
+            var recognition = new webkitSpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onresult = function(event) {
+                var transcript = event.results[0][0].transcript;
+                $('#review').val(transcript);  // Set the voice input as text in the textarea
+                analyzeSentiment();  // Automatically analyze sentiment after voice input
+            };
+
+            recognition.onerror = function(event) {
+                alert('Error occurred in recognition: ' + event.error);
+            };
+
+            recognition.start();
+        }
+    </script>
+</body>
+</html>
